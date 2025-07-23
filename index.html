@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Top Car - Dashboard de Gestão</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Biblioteca para geração de PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0D1117;
+        }
+        .sidebar { background-color: #010409; }
+        .main-content { background-color: #0D1117; }
+        .card { background-color: #161B22; border: 1px solid #30363D; }
+        .text-accent { color: #FFC107; }
+        .bg-accent { background-color: #FFC107; }
+        .btn-primary { background-color: #FFC107; color: #0D1117; font-weight: 600; transition: background-color 0.3s; }
+        .btn-primary:hover { background-color: #ffca2c; }
+        .btn-primary:disabled { background-color: #a0822a; color: #555; cursor: not-allowed; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0D1117; }
+        ::-webkit-scrollbar-thumb { background: #30363D; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #484F58; }
+        .nav-link.active { background-color: #161B22; color: #FFC107; border-left: 3px solid #FFC107; }
+        .nav-link { border-left: 3px solid transparent; }
+        .page-content { display: none; }
+        .page-content.active { display: block; }
+        .modal {
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+    </style>
+</head>
+<body class="text-gray-200">
+
+    <!-- Login Page -->
+    <div id="login-page" class="flex items-center justify-center h-screen bg-gray-900">
+        <div class="card w-full max-w-md p-8 m-4 rounded-xl">
+            <div class="flex justify-center mb-8">
+                <img src="https://googleusercontent.com/file_content/1" alt="Logo Top Car" class="h-20" onerror="this.onerror=null;this.src='https://placehold.co/200x80/161B22/FFC107?text=Top+Car';">
+            </div>
+            <h2 class="text-2xl font-bold text-center text-white">Acesso ao Painel de Gestão</h2>
+            <form id="login-form" class="mt-8 space-y-6">
+                <div>
+                    <label for="email" class="sr-only">Email</label>
+                    <input id="email" name="email" type="email" autocomplete="email" required class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-accent" placeholder="Email do Administrador" value="admin@topcar.com">
+                </div>
+                <div>
+                    <label for="password" class="sr-only">Senha</label>
+                    <input id="password" name="password" type="password" autocomplete="current-password" required class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-accent" placeholder="Senha" value="admin">
+                </div>
+                <p id="login-error" class="text-red-500 text-sm text-center hidden">Email ou senha inválidos.</p>
+                <div>
+                    <button type="submit" class="w-full btn-primary py-3 rounded-lg">
+                        Entrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Container (Hidden by default) -->
+    <div id="dashboard-container" class="hidden h-screen">
+        <div class="flex h-full">
+            <!-- Sidebar -->
+            <aside class="sidebar w-64 flex-shrink-0 flex flex-col">
+                <div class="h-20 flex items-center justify-center border-b border-gray-700">
+                    <img src="https://googleusercontent.com/file_content/1" alt="Logo Top Car" class="h-16" onerror="this.onerror=null;this.src='https://placehold.co/200x60/010409/FFC107?text=Top+Car';">
+                </div>
+                <nav class="flex-1 px-4 py-6 space-y-2">
+                    <a href="#" id="nav-dashboard" class="nav-link active flex items-center px-4 py-2.5 rounded-lg transition-colors duration-200 hover:bg-gray-800">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                        Dashboard
+                    </a>
+                     <a href="#" id="nav-agendamentos" class="nav-link flex items-center px-4 py-2.5 rounded-lg transition-colors duration-200 hover:bg-gray-800">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        Agendamentos
+                    </a>
+                    <a href="#" id="nav-ordens-servico" class="nav-link flex items-center px-4 py-2.5 rounded-lg transition-colors duration-200 hover:bg-gray-800">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        Ordens de Serviço
+                    </a>
+                    <a href="#" id="nav-clientes" class="nav-link flex items-center px-4 py-2.5 rounded-lg transition-colors duration-200 hover:bg-gray-800">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21v-1a6 6 0 00-5.197-5.975M15 10a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                        Clientes
+                    </a>
+                    <a href="#" id="nav-funcionarios" class="nav-link flex items-center px-4 py-2.5 rounded-lg transition-colors duration-200 hover:bg-gray-800">
+                         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        Funcionários
+                    </a>
+                    <a href="#" id="nav-estoque" class="nav-link flex items-center px-4 py-2.5 rounded-lg transition-colors duration-200 hover:bg-gray-800">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4M4 7s0 0 0 0m16 0s0 0 0 0M12 11a4 4 0 100-8 4 4 0 000 8z"></path></svg>
+                        Estoque
+                    </a>
+                    <a href="#" id="nav-relatorios" class="nav-link flex items-center px-4 py-2.5 rounded-lg transition-colors duration-200 hover:bg-gray-800">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        Relatórios
+                    </a>
+                </nav>
+                <div class="px-4 py-6">
+                    <button id="logout-btn" class="w-full flex items-center justify-center px-4 py-2.5 rounded-lg text-gray-400 hover:bg-red-500/10 hover:text-red-400 transition-colors duration-200">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                        Sair
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="main-content flex-1 p-6 lg:p-8 overflow-y-auto">
+                
+                <!-- Dashboard Page -->
+                <div id="page-dashboard" class="page-content active">
+                    <h1 class="text-3xl font-bold text-white">Dashboard</h1>
+                    <p class="text-gray-400 mt-1">Visão geral do seu negócio em tempo real.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
+                        <div class="card p-6 rounded-xl flex items-center">
+                            <div class="p-4 bg-gray-800 rounded-lg"><svg class="w-8 h-8 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg></div>
+                            <div class="ml-4"><p class="text-gray-400">Total de Clientes</p><p id="kpi-total-clientes" class="text-2xl font-bold text-white">0</p></div>
+                        </div>
+                        <div class="card p-6 rounded-xl flex items-center">
+                            <div class="p-4 bg-gray-800 rounded-lg"><svg class="w-8 h-8 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg></div>
+                            <div class="ml-4"><p class="text-gray-400">Serviços em Andamento</p><p id="kpi-servicos-andamento" class="text-2xl font-bold text-white">0</p></div>
+                        </div>
+                        <div class="card p-6 rounded-xl flex items-center">
+                            <div class="p-4 bg-gray-800 rounded-lg"><svg class="w-8 h-8 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>
+                            <div class="ml-4"><p class="text-gray-400">Agendamentos para Hoje</p><p id="kpi-agendamentos-hoje" class="text-2xl font-bold text-white">0</p></div>
+                        </div>
+                        <div class="card p-6 rounded-xl flex items-center">
+                            <div class="p-4 bg-gray-800 rounded-lg"><svg class="w-8 h-8 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01M12 6v-1m0-1V4m0 2.01v.01M12 18v-1m0-1v-1m0-1v-1m0-1v-1m0-1v-1m0-1v-1m0 0V9.01M12 4c-4.418 0-8 3.582-8 8s3.582 8 8 8 8-3.582 8-8-3.582-8-8-8z"></path></svg></div>
+                            <div class="ml-4"><p class="text-gray-400">Faturamento (Dia)</p><p id="kpi-faturamento-dia" class="text-2xl font-bold text-white">R$ 0,00</p></div>
+                        </div>
+                    </div>
+                    <div class="card rounded-xl mt-8">
+                        <div class="p-6 border-b border-gray-700"><h2 class="text-xl font-semibold text-white">Fila de Serviços / Em Andamento</h2></div>
+                        <div class="p-2"><table class="w-full"><thead class="text-left text-sm text-gray-400"><tr><th class="p-4 font-medium">Placa</th><th class="p-4 font-medium hidden md:table-cell">Veículo</th><th class="p-4 font-medium">Serviço Principal</th><th class="p-4 font-medium hidden lg:table-cell">Funcionário</th><th class="p-4 font-medium text-center">Status</th></tr></thead><tbody id="fila-servicos-body" class="divide-y divide-gray-800"></tbody></table></div>
+                    </div>
+                    <div class="card rounded-xl mt-8">
+                        <div class="p-6 border-b border-gray-700"><h2 class="text-xl font-semibold text-white">Próximos Agendamentos</h2></div>
+                        <div id="proximos-agendamentos-body" class="p-6 space-y-4"></div>
+                    </div>
+                </div>
+
+                <!-- Agendamentos Page -->
+                <div id="page-agendamentos" class="page-content">
+                    <div class="flex justify-between items-center">
+                        <div><h1 class="text-3xl font-bold text-white">Gestão de Agendamentos</h1><p class="text-gray-400 mt-1">Crie e gerencie os horários dos clientes.</p></div>
+                        <button data-modal="agendamento-modal" class="open-modal-btn btn-primary px-5 py-2.5 rounded-lg flex items-center"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>Novo Agendamento</button>
+                    </div>
+                    <div class="card rounded-xl mt-8"><div class="p-2"><table class="w-full"><thead class="text-left text-sm text-gray-400"><tr><th class="p-4 font-medium">Data</th><th class="p-4 font-medium">Hora</th><th class="p-4 font-medium">Cliente</th><th class="p-4 font-medium hidden md:table-cell">Serviço</th><th class="p-4 font-medium hidden lg:table-cell">Funcionário</th><th class="p-4 font-medium text-center">Ações</th></tr></thead><tbody id="agendamentos-table-body" class="divide-y divide-gray-800"></tbody></table></div></div>
+                </div>
+
+                <!-- Clientes Page -->
+                <div id="page-clientes" class="page-content">
+                    <div class="flex justify-between items-center">
+                        <div><h1 class="text-3xl font-bold text-white">Gestão de Clientes</h1><p class="text-gray-400 mt-1">Adicione, visualize e gerencie seus clientes.</p></div>
+                        <button data-modal="cliente-modal" class="open-modal-btn btn-primary px-5 py-2.5 rounded-lg flex items-center"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>Adicionar Cliente</button>
+                    </div>
+                    <div class="card rounded-xl mt-8"><div class="p-2"><table class="w-full"><thead class="text-left text-sm text-gray-400"><tr><th class="p-4 font-medium">Nome Completo</th><th class="p-4 font-medium hidden md:table-cell">Telefone</th><th class="p-4 font-medium hidden lg:table-cell">Email</th><th class="p-4 font-medium hidden lg:table-cell">Endereço</th><th class="p-4 font-medium text-center">Ações</th></tr></thead><tbody id="clientes-table-body" class="divide-y divide-gray-800"></tbody></table></div></div>
+                </div>
+
+                <!-- Ordens de Serviço Page -->
+                <div id="page-ordens-servico" class="page-content">
+                    <div class="flex justify-between items-center">
+                        <div><h1 class="text-3xl font-bold text-white">Ordens de Serviço</h1><p class="text-gray-400 mt-1">Crie e gerencie as ordens de serviço.</p></div>
+                        <button data-modal="os-modal" class="open-modal-btn btn-primary px-5 py-2.5 rounded-lg flex items-center"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>Criar OS</button>
+                    </div>
+                    <div class="card rounded-xl mt-8"><div class="p-2"><table class="w-full"><thead class="text-left text-sm text-gray-400"><tr><th class="p-4 font-medium">OS #</th><th class="p-4 font-medium">Cliente</th><th class="p-4 font-medium hidden md:table-cell">Veículo</th><th class="p-4 font-medium hidden lg:table-cell">Valor</th><th class="p-4 font-medium text-center">Status</th><th class="p-4 font-medium text-center">Ações</th></tr></thead><tbody id="os-table-body" class="divide-y divide-gray-800"></tbody></table></div></div>
+                </div>
+
+                <!-- Funcionários Page -->
+                <div id="page-funcionarios" class="page-content">
+                    <div class="flex justify-between items-center">
+                        <div><h1 class="text-3xl font-bold text-white">Gestão de Funcionários</h1><p class="text-gray-400 mt-1">Gerencie sua equipe e seus perfis de acesso.</p></div>
+                        <button data-modal="funcionario-modal" class="open-modal-btn btn-primary px-5 py-2.5 rounded-lg flex items-center"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>Adicionar Funcionário</button>
+                    </div>
+                    <div class="card rounded-xl mt-8"><div class="p-2"><table class="w-full"><thead class="text-left text-sm text-gray-400"><tr><th class="p-4 font-medium">Nome Completo</th><th class="p-4 font-medium hidden md:table-cell">Cargo</th><th class="p-4 font-medium hidden lg:table-cell">Email</th><th class="p-4 font-medium text-center">Status</th><th class="p-4 font-medium text-center">Ações</th></tr></thead><tbody id="funcionarios-table-body" class="divide-y divide-gray-800"></tbody></table></div></div>
+                </div>
+
+                <!-- Estoque Page -->
+                <div id="page-estoque" class="page-content">
+                    <div class="flex justify-between items-center">
+                        <div><h1 class="text-3xl font-bold text-white">Gestão de Estoque</h1><p class="text-gray-400 mt-1">Controle os produtos utilizados nos serviços.</p></div>
+                        <button data-modal="produto-modal" class="open-modal-btn btn-primary px-5 py-2.5 rounded-lg flex items-center"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>Adicionar Produto</button>
+                    </div>
+                    <div class="card rounded-xl mt-8"><div class="p-2"><table class="w-full"><thead class="text-left text-sm text-gray-400"><tr><th class="p-4 font-medium">Produto</th><th class="p-4 font-medium hidden md:table-cell">Fornecedor</th><th class="p-4 font-medium text-center">Quantidade</th><th class="p-4 font-medium text-center hidden lg:table-cell">Estoque Mínimo</th><th class="p-4 font-medium text-center">Status</th><th class="p-4 font-medium text-center">Ações</th></tr></thead><tbody id="estoque-table-body" class="divide-y divide-gray-800"></tbody></table></div></div>
+                </div>
+
+                <!-- Relatórios Page -->
+                <div id="page-relatorios" class="page-content">
+                    <div class="flex justify-between items-center mb-8">
+                        <div>
+                            <h1 class="text-3xl font-bold text-white">Relatórios Gerenciais</h1>
+                            <p class="text-gray-400 mt-1">Análise de performance e resultados financeiros.</p>
+                        </div>
+                        <button id="generate-pdf-btn" class="btn-primary px-5 py-2.5 rounded-lg flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            Gerar Relatório em PDF
+                        </button>
+                    </div>
+                    <div id="report-content">
+                        <div id="report-kpis" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+                        <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 mt-8">
+                            <div class="lg:col-span-3 card rounded-xl p-6">
+                                <h2 class="text-xl font-semibold text-white mb-4">Faturamento Mensal (Últimos 6 Meses)</h2>
+                                <canvas id="faturamentoChart"></canvas>
+                            </div>
+                            <div class="lg:col-span-2 card rounded-xl">
+                                <div class="p-6 border-b border-gray-700"><h2 class="text-xl font-semibold text-white">Últimos Serviços Concluídos</h2></div>
+                                <div id="ultimos-servicos-body" class="p-4 space-y-3"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="cliente-modal" class="modal fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center invisible opacity-0 z-50">
+        <div class="card rounded-xl w-full max-w-2xl p-8 m-4">
+            <div class="flex justify-between items-center"><h2 class="text-2xl font-bold text-white">Adicionar Novo Cliente</h2><button class="close-modal-btn text-gray-400 hover:text-white">&times;</button></div>
+            <form id="add-cliente-form" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="col-span-2"><label for="cliente-nome" class="block text-sm font-medium text-gray-300">Nome Completo</label><input type="text" id="cliente-nome" required class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-accent focus:border-accent"></div>
+                <div><label for="cliente-telefone" class="block text-sm font-medium text-gray-300">Telefone</label><input type="text" id="cliente-telefone" required class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-accent focus:border-accent"></div>
+                <div><label for="cliente-email" class="block text-sm font-medium text-gray-300">Email</label><input type="email" id="cliente-email" required class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-accent focus:border-accent"></div>
+                <div class="col-span-2"><label for="cliente-endereco" class="block text-sm font-medium text-gray-300">Endereço</label><input type="text" id="cliente-endereco" required class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-accent focus:border-accent"></div>
+                <div class="col-span-2 flex justify-end space-x-4 mt-4"><button type="button" class="close-modal-btn px-5 py-2.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-semibold">Cancelar</button><button type="submit" class="btn-primary px-5 py-2.5 rounded-lg">Salvar Cliente</button></div>
+            </form>
+        </div>
+    </div>
+    <div id="agendamento-modal" class="modal fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center invisible opacity-0 z-50">
+        <div class="card rounded-xl w-full max-w-2xl p-8 m-4">
+            <div class="flex justify-between items-center"><h2 class="text-2xl font-bold text-white">Novo Agendamento</h2><button class="close-modal-btn text-gray-400 hover:text-white">&times;</button></div>
+            <form id="add-agendamento-form" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="col-span-2"><label for="agendamento-cliente" class="block text-sm font-medium text-gray-300">Cliente</label><select id="agendamento-cliente" required class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-accent focus:border-accent"></select></div>
+                <div><label for="agendamento-servico" class="block text-sm font-medium text-gray-300">Serviço</label><input type="text" id="agendamento-servico" required class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-accent focus:border-accent"></div>
+                <div><label for="agendamento-funcionario" class="block text-sm font-medium text-gray-300">Funcionário</label><select id="agendamento-funcionario" required class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-accent focus:border-accent"></select></div>
+                <div><label for="agendamento-data" class="block text-sm font-medium text-gray-300">Data</label><input type="date" id="agendamento-data" required class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-accent focus:border-accent"></div>
+                <div><label for="agendamento-hora" class="block text-sm font-medium text-gray-300">Hora</label><input type="time" id="agendamento-hora" required class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-accent focus:border-accent"></div>
+                <div class="col-span-2 flex justify-end space-x-4 mt-4"><button type="button" class="close-modal-btn px-5 py-2.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-semibold">Cancelar</button><button type="submit" class="btn-primary px-5 py-2.5 rounded-lg">Salvar Agendamento</button></div>
+            </form>
+        </div>
+    </div>
+    <div id="funcionario-modal" class="modal fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center invisible opacity-0 z-50">
+        <div class="card rounded-xl w-full max-w-2xl p-8 m-4">
+            <div class="flex justify-between items-center"><h2 class="text-2xl font-bold text-white">Adicionar Novo Funcionário</h2><button class="close-modal-btn text-gray-400 hover:text-white">&times;</button></div>
+            <form id="add-funcionario-form" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div class="col-span-2"><label for="funcionario-nome" class="block text-sm font-medium text-gray-300">Nome Completo</label><input type="text" id="funcionario-nome" required class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-accent focus:border-accent"></div>
+                <div><label for="funcionario-cargo" class="block text-sm font-medium text-gray-300">Cargo</label><input type="text" id="funcionario-cargo" required class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-accent focus:border-accent"></div>
+                <div><label for="funcionario-email" class="block text-sm font-medium text-gray-300">Email</label><input type="email" id="funcionario-email" required class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-accent focus:border-accent"></div>
+                <div class="col-span-2 flex justify-end space-x-4 mt-4"><button type="button" class="close-modal-btn px-5 py-2.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-semibold">Cancelar</button><button type="submit" class="btn-primary px-5 py-2.5 rounded-lg">Salvar Funcionário</button></div>
+            </form>
+        </div>
+    </div>
+    <div id="produto-modal" class="modal fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center invisible opacity-0 z-50">
+        <div class="card rounded-xl w-full max-w-2xl p-8 m-4">
+            <div class="flex justify-between items-center"><h2 class="text-2xl font-bold text-white">Adicionar Novo Produto</h2><button class="close-modal-btn text-gray-400 hover:text-white">&times;</button></div>
+            <form id="add-produto-form" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="col-span-2"><label for="produto-nome" class="block text-sm font-medium text-gray-300">Nome do Produto</label><input type="text" id="produto-nome" required class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-accent focus:border-accent"></div>
+                <div><label for="produto-fornecedor" class="block text-sm font-medium text-gray-300">Fornecedor</label><input type="text" id="produto-fornecedor" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-accent focus:border-accent"></div>
+                <div><label for="produto-quantidade" class="block text-sm font-medium text-gray-300">Quantidade Inicial</label><input type="number" id="produto-quantidade" required class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-accent focus:border-accent"></div>
+                <div><label for="produto-estoqueMinimo" class="block text-sm font-medium text-gray-300">Estoque Mínimo</label><input type="number" id="produto-estoqueMinimo" required class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-accent focus:border-accent"></div>
+                <div class="col-span-2 flex justify-end space-x-4 mt-4"><button type="button" class="close-modal-btn px-5 py-2.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-semibold">Cancelar</button><button type="submit" class="btn-primary px-5 py-2.5 rounded-lg">Salvar Produto</button></div>
+            </form>
+        </div>
+    </div>
+    <div id="os-modal" class="modal fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center invisible opacity-0 z-50">
+        <div class="card rounded-xl w-full max-w-2xl p-8 m-4">
+            <div class="flex justify-between items-center"><h2 class="text-2xl font-bold text-white">Criar Nova Ordem de Serviço</h2><button class="close-modal-btn text-gray-400 hover:text-white">&times;</button></div>
+            <form id="add-os-form" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="col-span-2"><label for="os-cliente" class="block text-sm font-medium text-gray-300">Cliente</label><select id="os-cliente" required class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-accent focus:border-accent"></select></div>
+                <div><label for="os-veiculo" class="block text-sm font-medium text-gray-300">Veículo (Placa)</label><input type="text" id="os-veiculo" required class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-accent focus:border-accent"></div>
+                <div><label for="os-servico" class="block text-sm font-medium text-gray-300">Serviço Principal</label><input type="text" id="os-servico" required class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-accent focus:border-accent"></div>
+                <div><label for="os-valor" class="block text-sm font-medium text-gray-300">Valor (R$)</label><input type="number" step="0.01" id="os-valor" required class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-accent focus:border-accent"></div>
+                <div><label for="os-funcionario" class="block text-sm font-medium text-gray-300">Funcionário Responsável</label><select id="os-funcionario" required class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-accent focus:border-accent"></select></div>
+                <div class="col-span-2 flex justify-end space-x-4 mt-4"><button type="button" class="close-modal-btn px-5 py-2.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-semibold">Cancelar</button><button type="submit" class="btn-primary px-5 py-2.5 rounded-lg">Salvar OS</button></div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    // --- DATABASE SIMULATION (JSON Object) ---
+    let db = {
+        clientes: [
+            { id: 1, nome: 'Ana Carolina Souza', telefone: '(11) 98765-4321', email: 'ana.souza@example.com', endereco: 'Rua das Flores, 123, São Paulo, SP', dataCadastro: '2025-07-20' },
+            { id: 2, nome: 'Bruno Medeiros', telefone: '(21) 91234-5678', email: 'bruno.m@example.com', endereco: 'Av. Copacabana, 456, Rio de Janeiro, RJ', dataCadastro: '2025-07-18' },
+            { id: 3, nome: 'Carlos Eduardo Lima', telefone: '(31) 99988-7766', email: 'cadu.lima@example.com', endereco: 'Praça da Liberdade, 789, Belo Horizonte, MG', dataCadastro: '2025-07-15' },
+            { id: 4, nome: 'Mariana Almeida', telefone: '(81) 98877-1122', email: 'mari.a@example.com', endereco: 'Av. Boa Viagem, 321, Recife, PE', dataCadastro: '2025-07-14' },
+            { id: 5, nome: 'Felipe Nogueira', telefone: '(71) 99654-3344', email: 'felipe.n@example.com', endereco: 'Rua do Farol, 55, Salvador, BA', dataCadastro: '2025-07-11' },
+            { id: 6, nome: 'Juliana Ribeiro', telefone: '(48) 99123-8899', email: 'ju.ribeiro@example.com', endereco: 'Av. Beira Mar, 999, Florianópolis, SC', dataCadastro: '2025-07-10' }
+        ],
+        funcionarios: [
+            { id: 1, nome: 'Lucas Mendes', cargo: 'Detailer Sênior', email: 'lucas.mendes@topcar.com', status: 'Ativo' },
+            { id: 2, nome: 'Fernanda Costa', cargo: 'Gerente de Pátio', email: 'fernanda.costa@topcar.com', status: 'Ativo' },
+            { id: 3, nome: 'Ricardo Alves', cargo: 'Detailer Pleno', email: 'ricardo.alves@topcar.com', status: 'Ativo' },
+        ],
+        produtos: [
+            { id: 1, nome: 'Cera de Carnaúba Premium', fornecedor: 'Vonixx', quantidade: 15, estoqueMinimo: 5 },
+            { id: 2, nome: 'Shampoo Automotivo Neutro (5L)', fornecedor: 'Cadillac', quantidade: 8, estoqueMinimo: 10 },
+            { id: 3, nome: 'Vitrificador V-Paint (50ml)', fornecedor: 'Vonixx', quantidade: 12, estoqueMinimo: 10 },
+            { id: 4, nome: 'Pano de Microfibra 60x40', fornecedor: 'Autoamerica', quantidade: 50, estoqueMinimo: 20 },
+            { id: 5, nome: 'Limpador Multiuso (APC)', fornecedor: 'Easytech', quantidade: 4, estoqueMinimo: 5 },
+            { id: 6, nome: 'Descontaminante Ferroso Izer (500ml)', fornecedor: 'Vonixx', quantidade: 18, estoqueMinimo: 8 },
+            { id: 7, nome: 'Revelador de Hologramas', fornecedor: 'Kers', quantidade: 22, estoqueMinimo: 10 },
+            { id: 8, nome: 'Hidratante de Couro Hidracouro', fornecedor: 'Vonixx', quantidade: 14, estoqueMinimo: 5 },
+            { id: 9, nome: 'Pretinho para Pneus (Gel)', fornecedor: 'Nobre Car', quantidade: 30, estoqueMinimo: 15 },
+            { id: 10, nome: 'Escova para Detalhamento (Pincel)', fornecedor: 'Detailer', quantidade: 40, estoqueMinimo: 20 },
+            { id: 11, nome: 'Luva de Microfibra para Lavagem', fornecedor: 'Autoamerica', quantidade: 25, estoqueMinimo: 10 },
+            { id: 12, nome: 'Toalha de Secagem Waffle', fornecedor: 'Nobre Car', quantidade: 18, estoqueMinimo: 10 },
+            { id: 13, nome: 'Aplicador de Espuma (Kit 3)', fornecedor: 'Detailer', quantidade: 60, estoqueMinimo: 30 },
+            { id: 14, nome: 'Clay Bar Média Agressividade', fornecedor: 'Easytech', quantidade: 9, estoqueMinimo: 5 },
+            { id: 15, nome: 'Limpador de Vidros Glass Cleaner', fornecedor: 'Kers', quantidade: 13, estoqueMinimo: 5 }
+        ],
+        agendamentos: [
+            { id: 1, cliente_id: 4, servico: 'Lavagem Completa', funcionario_id: 1, data: '2025-07-22', hora: '14:00' },
+            { id: 2, cliente_id: 5, servico: 'Polimento de Faróis', funcionario_id: 3, data: '2025-07-22', hora: '15:30' },
+            { id: 3, cliente_id: 1, servico: 'Higienização do Ar', funcionario_id: 1, data: '2025-07-23', hora: '10:00' },
+        ],
+        ordensServico: [
+            { os_id: 201, cliente_id: 1, veiculo: 'RIO-2A18', servico: 'Vitrificação', funcionario_id: 1, status: 'Em Andamento', valor: 850.00 },
+            { os_id: 202, cliente_id: 2, veiculo: 'BRA-1B23', servico: 'Polimento Técnico', funcionario_id: 2, status: 'Em Andamento', valor: 450.00 },
+            { os_id: 203, cliente_id: 3, veiculo: 'SPO-4C51', servico: 'Higienização Interna', funcionario_id: 3, status: 'Aguardando', valor: 250.00 },
+            { os_id: 204, cliente_id: 4, veiculo: 'BHZ-9D88', servico: 'Lavagem Detalhada', funcionario_id: 1, status: 'Finalização', valor: 120.00 },
+            { os_id: 205, cliente_id: 5, veiculo: 'REC-3E77', servico: 'Enceramento Técnico', funcionario_id: 3, status: 'Em Andamento', valor: 200.00 },
+            { os_id: 206, cliente_id: 6, veiculo: 'POA-8F09', servico: 'Limpeza de Motor', funcionario_id: 2, status: 'Aguardando', valor: 180.00 }
+        ],
+        ordensServicoConcluidas: [
+            { os_id: 101, cliente_id: 1, veiculo: 'Honda Civic', servico: 'Vitrificação', valor: 850.00, data_conclusao: '2025-07-21' },
+            { os_id: 102, cliente_id: 2, veiculo: 'Toyota Corolla', servico: 'Polimento Técnico', valor: 450.00, data_conclusao: '2025-07-20' },
+            { os_id: 103, cliente_id: 3, veiculo: 'Jeep Compass', servico: 'Higienização Interna', valor: 250.00, data_conclusao: '2025-06-15' },
+            { os_id: 104, cliente_id: 1, veiculo: 'Honda Civic', servico: 'Lavagem Detalhada', valor: 150.00, data_conclusao: '2025-06-10' },
+            { os_id: 105, cliente_id: 2, veiculo: 'Toyota Corolla', servico: 'Lavagem Detalhada', valor: 150.00, data_conclusao: '2025-05-25' },
+            { os_id: 106, cliente_id: 3, veiculo: 'Jeep Compass', servico: 'Vitrificação', valor: 900.00, data_conclusao: '2025-04-30' },
+        ]
+    };
+
+    // --- RENDER FUNCTIONS ---
+    function renderAll() {
+        renderDashboard();
+        renderAgendamentos();
+        renderClientes();
+        renderOrdensServico();
+        renderFuncionarios();
+        renderEstoque();
+        renderRelatorios();
+    }
+
+    function renderAgendamentos() {
+        const tableBody = document.getElementById('agendamentos-table-body');
+        if (!tableBody) return;
+        tableBody.innerHTML = '';
+        db.agendamentos.forEach(ag => {
+            const cliente = db.clientes.find(c => c.id === ag.cliente_id);
+            const funcionario = db.funcionarios.find(f => f.id === ag.funcionario_id);
+            const row = `
+                <tr class="hover:bg-gray-800 transition-colors duration-200">
+                    <td class="p-4 font-medium text-white">${new Date(ag.data + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
+                    <td class="p-4 text-gray-300">${ag.hora}</td>
+                    <td class="p-4 text-gray-300">${cliente ? cliente.nome : 'N/A'}</td>
+                    <td class="p-4 text-gray-400 hidden md:table-cell">${ag.servico}</td>
+                    <td class="p-4 text-gray-400 hidden lg:table-cell">${funcionario ? funcionario.nome : 'N/A'}</td>
+                    <td class="p-4 text-center"><button class="text-accent hover:text-yellow-300 p-1">Editar</button></td>
+                </tr>`;
+            tableBody.innerHTML += row;
+        });
+    }
+
+    function renderClientes() {
+        const tableBody = document.getElementById('clientes-table-body');
+        if (!tableBody) return;
+        tableBody.innerHTML = '';
+        db.clientes.forEach(cliente => {
+            const row = `
+                <tr class="hover:bg-gray-800 transition-colors duration-200">
+                    <td class="p-4 font-medium text-white">${cliente.nome}</td>
+                    <td class="p-4 text-gray-400 hidden md:table-cell">${cliente.telefone}</td>
+                    <td class="p-4 text-gray-400 hidden lg:table-cell">${cliente.email}</td>
+                    <td class="p-4 text-gray-400 hidden lg:table-cell">${cliente.endereco}</td>
+                    <td class="p-4 text-center"><button class="text-accent hover:text-yellow-300 p-1">Editar</button><button class="text-red-500 hover:text-red-400 p-1">Excluir</button></td>
+                </tr>`;
+            tableBody.innerHTML += row;
+        });
+    }
+
+    function renderOrdensServico() {
+        const tableBody = document.getElementById('os-table-body');
+        if (!tableBody) return;
+        tableBody.innerHTML = '';
+        db.ordensServico.forEach(os => {
+            const cliente = db.clientes.find(c => c.id === os.cliente_id);
+            let statusClass = '';
+            switch(os.status) {
+                case 'Em Andamento': statusClass = 'bg-blue-500/20 text-blue-400'; break;
+                case 'Aguardando': statusClass = 'bg-yellow-500/20 text-yellow-400'; break;
+                case 'Finalização': statusClass = 'bg-green-500/20 text-green-400'; break;
+                case 'Concluído': statusClass = 'bg-gray-500/20 text-gray-400'; break;
+            }
+            const row = `
+                <tr class="hover:bg-gray-800 transition-colors duration-200">
+                    <td class="p-4 font-medium text-white">#${os.os_id}</td>
+                    <td class="p-4 text-gray-300">${cliente ? cliente.nome : 'N/A'}</td>
+                    <td class="p-4 text-gray-400 hidden md:table-cell">${os.veiculo}</td>
+                    <td class="p-4 text-gray-400 hidden lg:table-cell">${os.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                    <td class="p-4 text-center"><span class="px-3 py-1 text-xs font-medium rounded-full ${statusClass}">${os.status}</span></td>
+                    <td class="p-4 text-center"><button class="text-accent hover:text-yellow-300 p-1">Ver</button></td>
+                </tr>`;
+            tableBody.innerHTML += row;
+        });
+    }
+
+    function renderFuncionarios() {
+        const tableBody = document.getElementById('funcionarios-table-body');
+        if (!tableBody) return;
+        tableBody.innerHTML = '';
+        db.funcionarios.forEach(func => {
+            const statusClass = func.status === 'Ativo' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400';
+            const row = `
+                <tr class="hover:bg-gray-800 transition-colors duration-200">
+                    <td class="p-4 font-medium text-white">${func.nome}</td>
+                    <td class="p-4 text-gray-400 hidden md:table-cell">${func.cargo}</td>
+                    <td class="p-4 text-gray-400 hidden lg:table-cell">${func.email}</td>
+                    <td class="p-4 text-center"><span class="px-3 py-1 text-xs font-medium rounded-full ${statusClass}">${func.status}</span></td>
+                    <td class="p-4 text-center"><button class="text-accent hover:text-yellow-300 p-1">Editar</button><button class="text-red-500 hover:text-red-400 p-1">Excluir</button></td>
+                </tr>`;
+            tableBody.innerHTML += row;
+        });
+    }
+
+    function renderEstoque() {
+        const tableBody = document.getElementById('estoque-table-body');
+        if (!tableBody) return;
+        tableBody.innerHTML = '';
+        db.produtos.forEach(prod => {
+            let status, statusClass;
+            if (prod.quantidade <= 0) { status = 'Esgotado'; statusClass = 'bg-red-500/20 text-red-400'; } 
+            else if (prod.quantidade <= prod.estoqueMinimo) { status = 'Estoque Baixo'; statusClass = 'bg-yellow-500/20 text-yellow-400'; } 
+            else { status = 'Em Estoque'; statusClass = 'bg-green-500/20 text-green-400'; }
+            const row = `
+                <tr class="hover:bg-gray-800 transition-colors duration-200">
+                    <td class="p-4 font-medium text-white">${prod.nome}</td>
+                    <td class="p-4 text-gray-400 hidden md:table-cell">${prod.fornecedor}</td>
+                    <td class="p-4 text-center text-white">${prod.quantidade}</td>
+                    <td class="p-4 text-center text-gray-400 hidden lg:table-cell">${prod.estoqueMinimo}</td>
+                    <td class="p-4 text-center"><span class="px-3 py-1 text-xs font-medium rounded-full ${statusClass}">${status}</span></td>
+                    <td class="p-4 text-center"><button class="text-accent hover:text-yellow-300 p-1">Editar</button><button class="text-red-500 hover:text-red-400 p-1">Excluir</button></td>
+                </tr>`;
+            tableBody.innerHTML += row;
+        });
+    }
+    
+    function renderDashboard() {
+        const kpiClientes = document.getElementById('kpi-total-clientes');
+        const kpiAndamento = document.getElementById('kpi-servicos-andamento');
+        const kpiAgendamentos = document.getElementById('kpi-agendamentos-hoje');
+        const kpiFaturamento = document.getElementById('kpi-faturamento-dia');
+        const filaBody = document.getElementById('fila-servicos-body');
+        const agendamentosBody = document.getElementById('proximos-agendamentos-body');
+
+        if (!kpiClientes || !filaBody || !agendamentosBody) return;
+
+        const hoje = new Date().toISOString().split('T')[0];
+        const agendamentosHoje = db.agendamentos.filter(ag => ag.data === hoje);
+
+        kpiClientes.textContent = db.clientes.length;
+        kpiAndamento.textContent = db.ordensServico.length;
+        kpiAgendamentos.textContent = agendamentosHoje.length;
+        
+        const faturamentoDia = db.ordensServico.reduce((acc, servico) => acc + servico.valor, 0);
+        kpiFaturamento.textContent = faturamentoDia.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+        filaBody.innerHTML = '';
+        db.ordensServico.forEach(servico => {
+            let statusClass = '';
+            switch(servico.status) {
+                case 'Em Andamento': statusClass = 'bg-blue-500/20 text-blue-400'; break;
+                case 'Aguardando': statusClass = 'bg-yellow-500/20 text-yellow-400'; break;
+                case 'Finalização': statusClass = 'bg-green-500/20 text-green-400'; break;
+            }
+            const row = `
+                <tr class="hover:bg-gray-800 transition-colors duration-200">
+                    <td class="p-4 font-mono text-white">${servico.veiculo}</td>
+                    <td class="p-4 text-gray-400 hidden md:table-cell">${db.clientes.find(c => c.id === servico.cliente_id)?.nome || 'N/A'}</td>
+                    <td class="p-4 text-gray-300">${servico.servico}</td>
+                    <td class="p-4 text-gray-400 hidden lg:table-cell">${db.funcionarios.find(f => f.id === servico.funcionario_id)?.nome || 'N/A'}</td>
+                    <td class="p-4 text-center"><span class="px-3 py-1 text-xs font-medium rounded-full ${statusClass}">${servico.status}</span></td>
+                </tr>`;
+            filaBody.innerHTML += row;
+        });
+
+        agendamentosBody.innerHTML = '';
+        agendamentosHoje.forEach(ag => {
+            const cliente = db.clientes.find(c => c.id === ag.cliente_id);
+            const item = `
+                <div class="flex items-center justify-between p-4 rounded-lg hover:bg-gray-800 transition-colors duration-200">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-gray-800 rounded-lg flex items-center justify-center mr-4 border border-gray-700"><span class="text-accent font-bold text-lg">${ag.hora.split(':')[0]}</span></div>
+                        <div><p class="font-semibold text-white">${cliente ? cliente.nome : 'N/A'}</p><p class="text-sm text-gray-400">${ag.servico}</p></div>
+                    </div>
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </div>`;
+            agendamentosBody.innerHTML += item;
+        });
+    }
+
+    let faturamentoChartInstance;
+    function renderRelatorios() {
+        const kpisContainer = document.getElementById('report-kpis');
+        const ultimosServicosBody = document.getElementById('ultimos-servicos-body');
+        const ctx = document.getElementById('faturamentoChart')?.getContext('2d');
+
+        if (!kpisContainer || !ultimosServicosBody || !ctx) return;
+
+        const totalServicos = db.ordensServicoConcluidas.length;
+        const faturamentoTotal = db.ordensServicoConcluidas.reduce((acc, os) => acc + os.valor, 0);
+        const mediaServico = totalServicos > 0 ? faturamentoTotal / totalServicos : 0;
+
+        kpisContainer.innerHTML = `
+            <div class="card p-6 rounded-xl"><p class="text-gray-400">Total de Serviços (Histórico)</p><p class="text-2xl font-bold text-white">${totalServicos}</p></div>
+            <div class="card p-6 rounded-xl"><p class="text-gray-400">Faturamento Total</p><p class="text-2xl font-bold text-white">${faturamentoTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p></div>
+            <div class="card p-6 rounded-xl"><p class="text-gray-400">Ticket Médio por Serviço</p><p class="text-2xl font-bold text-white">${mediaServico.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p></div>
+        `;
+        
+        ultimosServicosBody.innerHTML = '';
+        db.ordensServicoConcluidas.slice(0, 5).forEach(os => {
+            const cliente = db.clientes.find(c => c.id === os.cliente_id);
+            const item = `
+                <div class="flex justify-between items-center p-3 rounded-lg hover:bg-gray-800">
+                    <div>
+                        <p class="font-semibold text-white">${os.servico}</p>
+                        <p class="text-sm text-gray-400">${cliente ? cliente.nome : 'Cliente não encontrado'} - ${os.veiculo}</p>
+                    </div>
+                    <span class="font-semibold text-accent">${os.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                </div>`;
+            ultimosServicosBody.innerHTML += item;
+        });
+
+        const faturamentoMensal = db.ordensServicoConcluidas.reduce((acc, os) => {
+            const mes = new Date(os.data_conclusao + 'T00:00:00').toLocaleString('default', { month: 'short' });
+            acc[mes] = (acc[mes] || 0) + os.valor;
+            return acc;
+        }, {});
+
+        const labels = Object.keys(faturamentoMensal).reverse();
+        const data = Object.values(faturamentoMensal).reverse();
+
+        if (faturamentoChartInstance) { faturamentoChartInstance.destroy(); }
+        faturamentoChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: { labels, datasets: [{ label: 'Faturamento', data, borderColor: '#FFC107', backgroundColor: 'rgba(255, 193, 7, 0.2)', fill: true, tension: 0.4 }] },
+            options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { ticks: { color: '#9CA3AF' } }, x: { ticks: { color: '#9CA3AF' } } } }
+        });
+    }
+    
+    // --- PDF GENERATION (Lean Version) ---
+    async function generatePDF() {
+        const pdfButton = document.getElementById('generate-pdf-btn');
+        pdfButton.disabled = true;
+        pdfButton.innerHTML = `<svg class="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">...</svg>Gerando...`;
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+
+        let y = 22; // Posição inicial no eixo Y
+
+        // Título
+        pdf.setFontSize(18);
+        pdf.text('Relatório Gerencial - Top Car Estética Automotiva', 14, y);
+        y += 7;
+        pdf.setFontSize(11);
+        pdf.setTextColor(150);
+        pdf.text(`Data de Emissão: ${new Date().toLocaleDateString('pt-BR')}`, 14, y);
+        y += 15;
+
+        // KPIs
+        pdf.setFontSize(14);
+        pdf.setTextColor(0);
+        pdf.text('Indicadores Chave (KPIs)', 14, y);
+        y += 7;
+        pdf.setFontSize(11);
+        const totalServicos = db.ordensServicoConcluidas.length;
+        const faturamentoTotal = db.ordensServicoConcluidas.reduce((acc, os) => acc + os.valor, 0);
+        const mediaServico = totalServicos > 0 ? faturamentoTotal / totalServicos : 0;
+        pdf.text(`- Total de Serviços (Histórico): ${totalServicos}`, 14, y);
+        y += 7;
+        pdf.text(`- Faturamento Total: ${faturamentoTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 14, y);
+        y += 7;
+        pdf.text(`- Ticket Médio por Serviço: ${mediaServico.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 14, y);
+        y += 15;
+
+        // Faturamento Mensal
+        pdf.setFontSize(14);
+        pdf.text('Faturamento por Mês', 14, y);
+        y += 7;
+        pdf.setFontSize(11);
+        const faturamentoMensal = db.ordensServicoConcluidas.reduce((acc, os) => {
+            const mes = new Date(os.data_conclusao + 'T00:00:00').toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+            acc[mes] = (acc[mes] || 0) + os.valor;
+            return acc;
+        }, {});
+        for (const [mes, valor] of Object.entries(faturamentoMensal)) {
+            pdf.text(`- ${mes.charAt(0).toUpperCase() + mes.slice(1)}: ${valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 14, y);
+            y += 7;
+        }
+        y += 8;
+
+        // Últimos Serviços
+        pdf.setFontSize(14);
+        pdf.text('Últimos 5 Serviços Concluídos', 14, y);
+        y += 7;
+        pdf.setFontSize(11);
+        db.ordensServicoConcluidas.slice(0, 5).forEach(os => {
+            const cliente = db.clientes.find(c => c.id === os.cliente_id);
+            pdf.text(`- OS #${os.os_id}: ${os.servico} (${cliente ? cliente.nome : 'N/A'}) - ${os.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 14, y);
+            y += 7;
+        });
+
+        pdf.save(`relatorio-top-car-${new Date().toISOString().split('T')[0]}.pdf`);
+
+        pdfButton.disabled = false;
+        pdfButton.innerHTML = `<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>Gerar Relatório em PDF`;
+    }
+
+    // --- AUTHENTICATION & NAVIGATION LOGIC ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const loginPage = document.getElementById('login-page');
+        const dashboardContainer = document.getElementById('dashboard-container');
+        const loginForm = document.getElementById('login-form');
+        const loginError = document.getElementById('login-error');
+        const logoutBtn = document.getElementById('logout-btn');
+
+        loginForm?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            // Simple check for demo purposes
+            if (email === 'admin@topcar.com' && password === 'admin') {
+                loginPage.classList.add('hidden');
+                dashboardContainer.classList.remove('hidden');
+                renderAll();
+            } else {
+                loginError.classList.remove('hidden');
+            }
+        });
+
+        logoutBtn?.addEventListener('click', () => {
+            dashboardContainer.classList.add('hidden');
+            loginPage.classList.remove('hidden');
+            loginError.classList.add('hidden');
+            document.getElementById('email').value = 'admin@topcar.com';
+            document.getElementById('password').value = 'admin';
+        });
+
+        const navLinks = document.querySelectorAll('.nav-link');
+        const pages = document.querySelectorAll('.page-content');
+        
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (link.classList.contains('cursor-not-allowed')) return;
+                const targetId = 'page-' + link.id.substring(4);
+                navLinks.forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+                pages.forEach(page => page.classList.toggle('active', page.id === targetId));
+            });
+        });
+
+        // Modal Handling
+        function populateModalDropdowns() {
+            const osClienteSelect = document.getElementById('os-cliente');
+            const osFuncionarioSelect = document.getElementById('os-funcionario');
+            const agendamentoClienteSelect = document.getElementById('agendamento-cliente');
+            const agendamentoFuncionarioSelect = document.getElementById('agendamento-funcionario');
+
+            if(osClienteSelect) {
+                osClienteSelect.innerHTML = '<option value="">Selecione um cliente</option>';
+                db.clientes.forEach(c => osClienteSelect.innerHTML += `<option value="${c.id}">${c.nome}</option>`);
+            }
+            if(osFuncionarioSelect) {
+                osFuncionarioSelect.innerHTML = '<option value="">Selecione um funcionário</option>';
+                db.funcionarios.forEach(f => osFuncionarioSelect.innerHTML += `<option value="${f.id}">${f.nome}</option>`);
+            }
+            if(agendamentoClienteSelect) {
+                agendamentoClienteSelect.innerHTML = '<option value="">Selecione um cliente</option>';
+                db.clientes.forEach(c => agendamentoClienteSelect.innerHTML += `<option value="${c.id}">${c.nome}</option>`);
+            }
+            if(agendamentoFuncionarioSelect) {
+                agendamentoFuncionarioSelect.innerHTML = '<option value="">Selecione um funcionário</option>';
+                db.funcionarios.forEach(f => agendamentoFuncionarioSelect.innerHTML += `<option value="${f.id}">${f.nome}</option>`);
+            }
+        }
+
+        const openModalBtns = document.querySelectorAll('.open-modal-btn');
+        const closeModalBtns = document.querySelectorAll('.close-modal-btn');
+        openModalBtns.forEach(btn => btn.addEventListener('click', () => {
+            const modal = document.getElementById(btn.dataset.modal);
+            if (modal) {
+                if(btn.dataset.modal === 'os-modal' || btn.dataset.modal === 'agendamento-modal') {
+                    populateModalDropdowns();
+                }
+                modal.classList.remove('invisible', 'opacity-0');
+            }
+        }));
+        const closeModal = (modal) => { if (modal) modal.classList.add('invisible', 'opacity-0'); };
+        closeModalBtns.forEach(btn => btn.addEventListener('click', () => closeModal(btn.closest('.modal'))));
+        document.querySelectorAll('.modal').forEach(modal => modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(modal); }));
+
+        // Form Submissions
+        document.getElementById('add-cliente-form')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const newCliente = {
+                id: db.clientes.length > 0 ? Math.max(...db.clientes.map(c => c.id)) + 1 : 1,
+                nome: document.getElementById('cliente-nome').value,
+                telefone: document.getElementById('cliente-telefone').value,
+                email: document.getElementById('cliente-email').value,
+                endereco: document.getElementById('cliente-endereco').value,
+                dataCadastro: new Date().toISOString().split('T')[0]
+            };
+            db.clientes.push(newCliente);
+            renderAll();
+            closeModal(document.getElementById('cliente-modal'));
+            e.target.reset();
+        });
+        document.getElementById('add-agendamento-form')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const newAgendamento = {
+                id: db.agendamentos.length > 0 ? Math.max(...db.agendamentos.map(a => a.id)) + 1 : 1,
+                cliente_id: parseInt(document.getElementById('agendamento-cliente').value),
+                servico: document.getElementById('agendamento-servico').value,
+                funcionario_id: parseInt(document.getElementById('agendamento-funcionario').value),
+                data: document.getElementById('agendamento-data').value,
+                hora: document.getElementById('agendamento-hora').value
+            };
+            db.agendamentos.push(newAgendamento);
+            renderAll();
+            closeModal(document.getElementById('agendamento-modal'));
+            e.target.reset();
+        });
+        document.getElementById('add-funcionario-form')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const newFuncionario = {
+                id: db.funcionarios.length > 0 ? Math.max(...db.funcionarios.map(f => f.id)) + 1 : 1,
+                nome: document.getElementById('funcionario-nome').value,
+                cargo: document.getElementById('funcionario-cargo').value,
+                email: document.getElementById('funcionario-email').value,
+                status: 'Ativo'
+            };
+            db.funcionarios.push(newFuncionario);
+            renderAll();
+            closeModal(document.getElementById('funcionario-modal'));
+            e.target.reset();
+        });
+        document.getElementById('add-produto-form')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const newProduto = {
+                id: db.produtos.length > 0 ? Math.max(...db.produtos.map(p => p.id)) + 1 : 1,
+                nome: document.getElementById('produto-nome').value,
+                fornecedor: document.getElementById('produto-fornecedor').value,
+                quantidade: parseInt(document.getElementById('produto-quantidade').value) || 0,
+                estoqueMinimo: parseInt(document.getElementById('produto-estoqueMinimo').value) || 0
+            };
+            db.produtos.push(newProduto);
+            renderAll();
+            closeModal(document.getElementById('produto-modal'));
+            e.target.reset();
+        });
+        document.getElementById('add-os-form')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const newOS = {
+                os_id: db.ordensServico.length > 0 ? Math.max(...db.ordensServico.map(os => os.os_id)) + 1 : 201,
+                cliente_id: parseInt(document.getElementById('os-cliente').value),
+                veiculo: document.getElementById('os-veiculo').value,
+                servico: document.getElementById('os-servico').value,
+                funcionario_id: parseInt(document.getElementById('os-funcionario').value),
+                status: 'Aguardando',
+                valor: parseFloat(document.getElementById('os-valor').value)
+            };
+            db.ordensServico.push(newOS);
+            renderAll();
+            closeModal(document.getElementById('os-modal'));
+            e.target.reset();
+        });
+
+        // PDF Button
+        document.getElementById('generate-pdf-btn')?.addEventListener('click', generatePDF);
+    });
+    </script>
+</body>
+</html>
+    
